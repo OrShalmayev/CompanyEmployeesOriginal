@@ -221,6 +221,16 @@
           "bin/placeholder/Contracts.dll": {}
         }
       },
+      "Entities/1.0.0": {
+        "type": "project",
+        "framework": ".NETCoreApp,Version=v5.0",
+        "compile": {
+          "bin/placeholder/Entities.dll": {}
+        },
+        "runtime": {
+          "bin/placeholder/Entities.dll": {}
+        }
+      },
       "LoggerService/1.0.0": {
         "type": "project",
         "framework": ".NETCoreApp,Version=v5.0",
@@ -574,6 +584,11 @@
       "path": "../Contracts/Contracts.csproj",
       "msbuildProject": "../Contracts/Contracts.csproj"
     },
+    "Entities/1.0.0": {
+      "type": "project",
+      "path": "../Entities/Entities.csproj",
+      "msbuildProject": "../Entities/Entities.csproj"
+    },
     "LoggerService/1.0.0": {
       "type": "project",
       "path": "../LoggerService/LoggerService.csproj",
@@ -582,6 +597,7 @@
   },
   "projectFileDependencyGroups": {
     "net5.0": [
+      "Entities >= 1.0.0",
       "LoggerService >= 1.0.0",
       "NLog.Extensions.Logging >= 1.5.1",
       "Swashbuckle.AspNetCore >= 5.6.3"
@@ -614,6 +630,9 @@
         "net5.0": {
           "targetAlias": "net5.0",
           "projectReferences": {
+            "C:\\Users\\Or\\source\\repos\\CompanyEmployeesOriginal\\Entities\\Entities.csproj": {
+              "projectPath": "C:\\Users\\Or\\source\\repos\\CompanyEmployeesOriginal\\Entities\\Entities.csproj"
+            },
             "C:\\Users\\Or\\source\\repos\\CompanyEmployeesOriginal\\LoggerService\\LoggerService.csproj": {
               "projectPath": "C:\\Users\\Or\\source\\repos\\CompanyEmployeesOriginal\\LoggerService\\LoggerService.csproj"
             }
