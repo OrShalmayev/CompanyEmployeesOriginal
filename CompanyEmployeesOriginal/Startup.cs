@@ -34,6 +34,7 @@ namespace CompanyEmployeesOriginal
             services.ConfigureCors();
             services.ConfigureIISIntegration();
             services.ConfigureLoggerService();
+            services.ConfigureSqlContext(Configuration);
             services.AddControllers();
             services.AddSwaggerGen(c =>
             {

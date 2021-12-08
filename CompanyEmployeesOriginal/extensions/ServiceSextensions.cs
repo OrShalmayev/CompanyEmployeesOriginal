@@ -1,5 +1,7 @@
 using Contracts;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 public static class serviceExtensions {
@@ -23,4 +25,14 @@ public static class serviceExtensions {
     {
         services.AddScoped<ILoggerManager, LoggerManager>();
     }
+
+    // register the repository context
+    public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration) =>
+         services.AddDbContext<RepositoryContext>(opts =>
+             opts.UseSqlServer(
+                 configuration["ConnectionStrings:DefaultConnection"],
+                 b => b.MigrationsAssembly("CompanyEmployeesOriginal")
+             )
+         );
+
 }
