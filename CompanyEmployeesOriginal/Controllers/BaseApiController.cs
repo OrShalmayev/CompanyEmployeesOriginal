@@ -8,7 +8,7 @@ namespace CompanyEmployeesOriginal.Controllers
 {
     [ApiController]
     [Route("/api/[controller]")]
-    public class BaseApiController
+    public class BaseApiController : ControllerBase
     {
     }
 }

@@ -1,3 +1,5 @@
+using CompanyEmployeesOriginal.Extensions;
+using Contracts;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -30,7 +32,7 @@ namespace CompanyEmployeesOriginal
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-
+            services.AddAutoMapper(typeof(Startup));
             services.ConfigureCors();
             services.ConfigureIISIntegration();
             services.ConfigureLoggerService();
@@ -44,7 +46,7 @@ namespace CompanyEmployeesOriginal
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerManager logger)
         {
             if (env.IsDevelopment())
             {
@@ -52,6 +54,7 @@ namespace CompanyEmployeesOriginal
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "CompanyEmployeesOriginal v1"));
             }
+            app.ConfigureExceptionHandler(logger);
             // enables using static files for the request if we dont set a path to the static files directory, the default is wwwroot
             app.UseStaticFiles();
             app.UseCors("CorsPolicy");
