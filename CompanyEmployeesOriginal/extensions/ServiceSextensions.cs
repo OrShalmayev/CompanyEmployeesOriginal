@@ -1,10 +1,11 @@
 using Contracts;
+using Entities;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-public static class serviceExtensions {
+public static class ServiceExtensions {
     // configure CORS in our application
     public static void ConfigureCors(this IServiceCollection services) {
         services.AddCors(options => {
@@ -26,7 +27,7 @@ public static class serviceExtensions {
         services.AddScoped<ILoggerManager, LoggerManager>();
     }
 
-    // register the repository context
+    // register the database
     public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration) =>
          services.AddDbContext<RepositoryContext>(opts =>
              opts.UseSqlServer(
@@ -34,5 +35,8 @@ public static class serviceExtensions {
                  b => b.MigrationsAssembly("CompanyEmployeesOriginal")
              )
          );
+    // register the repository manager
+    public static void ConfigureRepositoryManager(this IServiceCollection services) =>
+        services.AddScoped<IRepositoryManager, RepositoryManager>();
 
 }
