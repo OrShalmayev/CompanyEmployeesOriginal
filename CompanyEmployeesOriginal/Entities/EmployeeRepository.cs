@@ -12,5 +12,16 @@ namespace Entities
         public EmployeeRepository(RepositoryContext repoCtx) : base(repoCtx)
         {
         }
+
+        public IEnumerable<Employee> GetEmployees(Guid id, bool trackChanges)
+        {
+            return FindByCondition(e => e.CompanyId.Equals(id), trackChanges)
+                .OrderBy(e => e.Name);
+        }
+
+        public Employee GetEmployee(Guid companyId, Guid empId, bool trackChanges)
+        {
+            return FindByCondition(e => e.CompanyId.Equals(companyId) && e.Id.Equals(empId), trackChanges).SingleOrDefault();
+        }
     }
 }
