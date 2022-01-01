@@ -24,8 +24,7 @@ namespace CompanyEmployeesOriginal.Controllers
         {
             var companies = _repo.Company.GetAllCompanies(trackChanges: false);
             var companiesDto = _mapper.Map<IEnumerable<CompanyDto>>(companies);
-            throw new Exception("Exception");
-            //return Ok(companiesDto);
+            return Ok(companiesDto);
         }
     }
 }
