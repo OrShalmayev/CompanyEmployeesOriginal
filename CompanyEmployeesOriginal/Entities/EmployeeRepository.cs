@@ -23,5 +23,11 @@ namespace Entities
         {
             return FindByCondition(e => e.CompanyId.Equals(companyId) && e.Id.Equals(empId), trackChanges).SingleOrDefault();
         }
+        public void CreateEmployeeForCompany(Guid companyId, Employee employee)
+        {
+            employee.CompanyId = companyId;
+            Create(employee);
+        }
+
     }
 }

@@ -14,7 +14,7 @@ namespace CompanyEmployeesOriginal.Controllers
 {
     [ApiController]
     [Route("/api/companies/{companyId}/employees")]
-    public class EmployeesController: ControllerBase
+    public class EmployeesController : ControllerBase
     {
         private readonly IRepositoryManager _repo;
         private readonly ILoggerManager _logger;
@@ -41,7 +41,7 @@ namespace CompanyEmployeesOriginal.Controllers
             return Ok(empDto);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id}", Name = "GetEmployeeForCompany")]
         public IActionResult GetEmployee(Guid companyId, Guid id)
         {
             Company comp = _repo.Company.GetCompany(companyId, trackChanges: false);
@@ -58,6 +58,33 @@ namespace CompanyEmployeesOriginal.Controllers
             }
             EmployeeDto empDto = _mapper.Map<EmployeeDto>(empFromDb);
             return Ok(empDto);
+        }
+
+        [HttpPost]
+        public IActionResult CreateEmployeeForCompany(Guid companyId, [FromBody] EmployeeForCreationDto employee)
+        {
+            if (employee == null)
+            {
+                _logger.LogError("EmployeeForCreationDto object sent from client is null.");
+                return BadRequest("EmployeeForCreationDto object is null");
+            }
+            var company = _repo.Company.GetCompany(companyId, trackChanges: false);
+            if (company == null)
+            {
+                _logger.LogInfo($"Company with id: {companyId} doesn't exist in the database.");
+                return NotFound();
+            }
+            var employeeEntity = _mapper.Map<Employee>(employee);
+
+            _repo.Employee.CreateEmployeeForCompany(companyId, employeeEntity);
+            _repo.Save();
+            var employeeToReturn = _mapper.Map<EmployeeDto>(employeeEntity);
+            return CreatedAtRoute("GetEmployeeForCompany", new
+            {
+                companyId,
+                id = employeeToReturn.Id
+            }, employeeToReturn);
+
         }
     }
 }
