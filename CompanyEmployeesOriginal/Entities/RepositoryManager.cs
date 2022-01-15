@@ -36,6 +36,5 @@ namespace Entities
             }
         }
         public void Save() => _repoCtx.SaveChanges();
-
     }
 }

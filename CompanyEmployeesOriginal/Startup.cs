@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 
 namespace CompanyEmployeesOriginal
 {
@@ -38,10 +39,16 @@ namespace CompanyEmployeesOriginal
             services.ConfigureLoggerService();
             services.ConfigureSqlContext(Configuration);
             services.ConfigureRepositoryManager();
-            services.AddControllers();
+            services.AddControllers(config =>
+            {
+                config.RespectBrowserAcceptHeader = true;
+                config.ReturnHttpNotAcceptable = true;
+            }).AddNewtonsoftJson();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "CompanyEmployeesOriginal", Version = "v1" });
+                c.ResolveConflictingActions(apiDescriptions => apiDescriptions.First()); //This line
+
             });
         }
 

@@ -8,6 +8,11 @@ using Microsoft.AspNetCore.Mvc.ModelBinding;
 
 namespace CompanyEmployeesOriginal.Entities.ModelBinders
 {
+    /**
+     * Our ArrayModelBinder will be triggered before an action executes. It 
+        will convert the sent string parameter to the IEnumerable<Guid> type, 
+        and then the action will be executed
+     */
     public class ArrayModelBinder : IModelBinder
     {
         public Task BindModelAsync(ModelBindingContext bindingContext)

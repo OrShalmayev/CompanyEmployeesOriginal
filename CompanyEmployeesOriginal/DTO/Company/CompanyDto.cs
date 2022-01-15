@@ -11,4 +11,5 @@ namespace CompanyEmployeesOriginal.DTO.Company
         public string Name { get; set; }
         public string FullAddress { get; set; }
     }
+
 }

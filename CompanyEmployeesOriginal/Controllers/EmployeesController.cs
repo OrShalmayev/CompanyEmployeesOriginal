@@ -8,6 +8,7 @@ using Contracts;
 using Entities;
 using Entities.Models;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CompanyEmployeesOriginal.Controllers
@@ -30,10 +31,8 @@ namespace CompanyEmployeesOriginal.Controllers
         [HttpGet]
         public IActionResult GetEmployeesForCompany(Guid companyId)
         {
-            var comp = _repo.Company.GetCompany(companyId, trackChanges: false);
-            if (comp == null)
+            if (HandleGetCompanyById(companyId, out Company company) == null)
             {
-                _logger.LogInfo($"Company with id: {companyId} doesn't exist in the database.");
                 return NotFound();
             }
             var empFromDb = _repo.Employee.GetEmployees(companyId, trackChanges: false);
@@ -44,37 +43,32 @@ namespace CompanyEmployeesOriginal.Controllers
         [HttpGet("{id}", Name = "GetEmployeeForCompany")]
         public IActionResult GetEmployee(Guid companyId, Guid id)
         {
-            Company comp = _repo.Company.GetCompany(companyId, trackChanges: false);
-            if (comp == null)
+            if (HandleGetCompanyById(companyId, out Company company) == null)
             {
-                _logger.LogInfo($"Company with id: {companyId} doesn't exist in the database.");
                 return NotFound();
             }
-            Employee empFromDb = _repo.Employee.GetEmployee(companyId, id, trackChanges: false);
-            if (empFromDb == null)
+            if (HandleGetEmployeeById(companyId, id, out Employee employeeForCompany, trackChanges: true) == null)
             {
-                _logger.LogInfo($"Employee with id: {id} doesn't exist in the database.");
                 return NotFound();
             }
-            EmployeeDto empDto = _mapper.Map<EmployeeDto>(empFromDb);
+            EmployeeDto empDto = _mapper.Map<EmployeeDto>(employeeForCompany);
             return Ok(empDto);
         }
 
         [HttpPost]
-        public IActionResult CreateEmployeeForCompany(Guid companyId, [FromBody] EmployeeForCreationDto employee)
+        public IActionResult CreateEmployeeForCompany(Guid companyId, [FromBody] EmployeeForCreationDto employeeDto)
         {
-            if (employee == null)
+            if (employeeDto == null)
             {
-                _logger.LogError("EmployeeForCreationDto object sent from client is null.");
-                return BadRequest("EmployeeForCreationDto object is null");
+                string strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, nameof(EmployeeForCreationDto));
+                _logger.LogError(strToLog);
+                return BadRequest(strToLog);
             }
-            var company = _repo.Company.GetCompany(companyId, trackChanges: false);
-            if (company == null)
+            if (HandleGetCompanyById(companyId, out Company company) == null)
             {
-                _logger.LogInfo($"Company with id: {companyId} doesn't exist in the database.");
                 return NotFound();
             }
-            var employeeEntity = _mapper.Map<Employee>(employee);
+            var employeeEntity = _mapper.Map<Employee>(employeeDto);
 
             _repo.Employee.CreateEmployeeForCompany(companyId, employeeEntity);
             _repo.Save();
@@ -85,6 +79,115 @@ namespace CompanyEmployeesOriginal.Controllers
                 id = employeeToReturn.Id
             }, employeeToReturn);
 
+        }
+
+        [HttpDelete]
+        public IActionResult DeleteEmployee(Guid companyId, Guid employeeId)
+        {
+            if (HandleGetCompanyById(companyId, out Company company) == null)
+            {
+                return NotFound();
+            }
+
+            if (HandleGetEmployeeById(companyId, employeeId, out Employee employeeForCompany, trackChanges: true) == null)
+            {
+                return NotFound();
+            }
+
+            _repo.Employee.DeleteEmployee(employeeForCompany);
+            _repo.Save();
+            return NoContent();
+        }
+
+        [HttpPut("{employeeId}")]
+        public IActionResult UpdateEmployeeForCompany(Guid companyId, Guid employeeId, [FromBody] EmployeeForUpdateDto employeeDto)
+        {
+            if (employeeDto == null)
+            {
+                string strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, nameof(EmployeeForUpdateDto));
+                _logger.LogError(strToLog);
+                return BadRequest(strToLog);
+            }
+
+            if (HandleGetCompanyById(companyId, out Company company) == null)
+            {
+                return NotFound();
+            }
+            if (HandleGetEmployeeById(companyId, employeeId, out Employee employeeForCompany, trackChanges: true) == null)
+            {
+                return NotFound();
+            }
+
+            _mapper.Map(employeeDto, employeeForCompany);
+            _repo.Save();
+
+            return NoContent();
+        }
+
+        [HttpPatch("{id}")]
+        public IActionResult PartiallyUpdateEmployeeForCompany(
+            Guid companyId, 
+            Guid id, 
+            [FromBody] JsonPatchDocument<EmployeeForUpdateDto> patchDoc
+        )
+        {
+            if (HandleDtoFromBody(patchDoc) == null)
+            {
+                return BadRequest();
+            }
+
+            if (HandleGetCompanyById(companyId, out Company company) == null)
+            {
+                return NotFound();
+            }
+
+            if (HandleGetEmployeeById(companyId: companyId, employeeId: id, out Employee employeeForCompany, trackChanges: true) == null)
+            {
+                return NotFound();
+            }
+
+            EmployeeForUpdateDto employeeToPatch = _mapper.Map<EmployeeForUpdateDto>(employeeForCompany);
+
+            patchDoc.ApplyTo(employeeToPatch);
+
+            _mapper.Map(employeeToPatch, employeeForCompany);
+
+            _repo.Save();
+
+            return NoContent();
+        }
+
+        [NonAction]
+        public Company HandleGetCompanyById(Guid companyId, out Company company, bool trackChanges = false)
+        {
+            company = _repo.Company.GetCompany(companyId, trackChanges);
+            if (company == null)
+            {
+                string strToLog = string.Format(LoggerCustomMessages.IdNotFoundInDB, nameof(Company), companyId);
+                _logger.LogInfo(strToLog);
+            }
+            return company;
+        }
+        [NonAction]
+        public Employee HandleGetEmployeeById(Guid companyId, Guid employeeId, out Employee employeeForCompany, bool trackChanges = false)
+        {
+            employeeForCompany = _repo.Employee.GetEmployee(companyId, employeeId, trackChanges);
+            if (employeeForCompany == null)
+            {
+                string strToLog = string.Format(LoggerCustomMessages.IdNotFoundInDB, nameof(Employee), employeeId);
+                _logger.LogInfo(strToLog);
+            }
+            return employeeForCompany;
+        }
+        [NonAction]
+        public object HandleDtoFromBody(object dto)
+        {
+            if (dto == null)
+            {
+                string strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, dto.GetType().Name);
+                _logger.LogError(strToLog);
+            }
+            return dto;
         }
     }
 }

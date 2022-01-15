@@ -19,6 +19,11 @@ namespace Entities
             Create(c);
         }
 
+        public void DeleteCompany(Company c)
+        {
+            Delete(c);
+        }
+
         public IEnumerable<Company> GetAllCompanies(bool trackChanges)
         {
             return FindAll(trackChanges)

@@ -33,7 +33,7 @@ public static class ServiceExtensions {
              opts.UseSqlServer(
                  configuration["ConnectionStrings:DefaultConnection"],
                  b => b.MigrationsAssembly("CompanyEmployeesOriginal")
-             )
+             ).EnableSensitiveDataLogging()
          );
     // register the repository manager
     public static void ConfigureRepositoryManager(this IServiceCollection services) =>
