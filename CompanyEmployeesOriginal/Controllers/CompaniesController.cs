@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using CompanyEmployeesOriginal.ActionFilters;
 using CompanyEmployeesOriginal.DTO.Company;
 using CompanyEmployeesOriginal.Entities.ModelBinders;
 using Contracts;
@@ -52,14 +53,9 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpPost]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         public async Task<IActionResult> CreateCompany([FromBody] CompanyForCreationDto company)
         {
-            if (company == null)
-            {
-                var strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, nameof(CompanyForCreationDto));
-                _logger.LogError(strToLog);
-                return BadRequest(strToLog);
-            }
             Company companyEntity = _mapper.Map<Company>(company);
             
             _repo.Company.CreateCompany(companyEntity);
@@ -115,14 +111,10 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ServiceFilter(typeof(ValidateCompanyExistsAttribute))]
         public async Task<IActionResult> DeleteCompany(Guid id)
         {
-            Company c = await HandleGetComapnyById(companyId: id);
-            
-            if (c == null)
-            {
-                return NotFound();
-            }
+            Company c = HttpContext.Items["company"] as Company;
             
             _repo.Company.DeleteCompany(c);
             await _repo.SaveAsync();
@@ -131,47 +123,15 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpPut("{id}")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
+        [ServiceFilter(typeof(ValidateCompanyExistsAttribute))]
         public async Task<IActionResult> UpdateCompany(Guid id, [FromBody] CompanyForUpdateDto companyDto)
         {
-            if (HandleDtoFromBody(companyDto) == null)
-            {
-                return BadRequest();
-            }
-
-            Company c = await HandleGetComapnyById(id, trackChanges: true);
-            if (c == null)
-            {
-                return NotFound();
-            }
-
+            Company c = HttpContext.Items["company"] as Company;
             _mapper.Map(companyDto, c);
             await _repo.SaveAsync();
 
             return NoContent();
-        }
-
-        [NonAction]
-        public async Task<Company> HandleGetComapnyById(Guid companyId, bool trackChanges = false)
-        {
-            Company c = await _repo.Company.GetCompanyAsync(companyId, trackChanges);
-            if (c == null)
-            {
-                string strToLog = string.Format(LoggerCustomMessages.IdNotFoundInDB, nameof(Company), companyId);
-                _logger.LogError(strToLog);
-            }
-            return c;
-        }
-
-        [NonAction]
-        public object HandleDtoFromBody(object dto)
-        {
-            if (dto == null)
-            {
-                string strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, dto.GetType().Name);
-                _logger.LogError(strToLog);
-
-            }
-            return dto;
         }
     }
 }

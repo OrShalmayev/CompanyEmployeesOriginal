@@ -17,6 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
+using CompanyEmployeesOriginal.ActionFilters;
 
 namespace CompanyEmployeesOriginal
 {
@@ -39,6 +40,7 @@ namespace CompanyEmployeesOriginal
             services.ConfigureLoggerService();
             services.ConfigureSqlContext(Configuration);
             services.ConfigureRepositoryManager();
+            services.ConfigureCustomActionFilters();
             services.AddControllers(config =>
             {
                 config.RespectBrowserAcceptHeader = true;

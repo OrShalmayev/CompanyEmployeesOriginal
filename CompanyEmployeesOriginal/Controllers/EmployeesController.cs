@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using CompanyEmployeesOriginal.ActionFilters;
 using CompanyEmployeesOriginal.DTO.Employee;
 using Contracts;
 using Entities;
@@ -60,14 +61,9 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpPost]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
         public async Task<IActionResult> CreateEmployeeForCompany(Guid companyId, [FromBody] EmployeeForCreationDto employeeDto)
         {
-            if (employeeDto == null)
-            {
-                string strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, nameof(EmployeeForCreationDto));
-                _logger.LogError(strToLog);
-                return BadRequest(strToLog);
-            }
             if (!ModelState.IsValid)
             {
                 _logger.LogError("Invalid model state for the EmployeeForCreationDto object");
@@ -93,19 +89,10 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpDelete]
+        [ServiceFilter(typeof(ValidateEmployeeForCompanyExistsAttribute))]
         public async Task<IActionResult> DeleteEmployee(Guid companyId, Guid employeeId)
         {
-            Company company = await HandleGetCompanyById(companyId);
-
-            if (company == null)
-            {
-                return NotFound();
-            }
-            Employee employeeForCompany = await HandleGetEmployeeById(companyId, employeeId, trackChanges: true);
-            if (employeeForCompany == null)
-            {
-                return NotFound();
-            }
+            Employee employeeForCompany = HttpContext.Items["employee"] as Employee;
 
             _repo.Employee.DeleteEmployee(employeeForCompany);
             await _repo.SaveAsync();
@@ -113,32 +100,11 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpPut("{employeeId}")]
+        [ServiceFilter(typeof(ValidationFilterAttribute))]
+        [ServiceFilter(typeof(ValidateEmployeeForCompanyExistsAttribute))]
         public async Task<IActionResult> UpdateEmployeeForCompany(Guid companyId, Guid employeeId, [FromBody] EmployeeForUpdateDto employeeDto)
         {
-            if (employeeDto == null)
-            {
-                string strToLog = string.Format(LoggerCustomMessages.ObjectFromClientIsNull, nameof(EmployeeForUpdateDto));
-                _logger.LogError(strToLog);
-                return BadRequest(strToLog);
-            }
-            if (!ModelState.IsValid)
-            {
-                _logger.LogError("Invalid model state for the EmployeeForUpdateDto object");
-                return UnprocessableEntity(ModelState);
-            }
-            Company company = await HandleGetCompanyById(companyId);
-
-            if (company == null)
-            {
-                return NotFound();
-            }
-            Employee employeeForCompany = await HandleGetEmployeeById(companyId, employeeId, trackChanges: true);
-
-            if (employeeForCompany == null)
-            {
-                return NotFound();
-            }
-
+            Employee employeeForCompany = HttpContext.Items["employee"] as Employee;
             _mapper.Map(employeeDto, employeeForCompany);
             await _repo.SaveAsync();
 
@@ -146,6 +112,7 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpPatch("{id}")]
+        [ServiceFilter(typeof(ValidateEmployeeForCompanyExistsAttribute))]
         public async Task<IActionResult> PartiallyUpdateEmployeeForCompany(
             Guid companyId, 
             Guid id, 
@@ -157,22 +124,15 @@ namespace CompanyEmployeesOriginal.Controllers
             {
                 return BadRequest();
             }
-            Company company = await HandleGetCompanyById(companyId);
-            if (company == null)
-            {
-                return NotFound();
-            }
-            Employee employeeForCompany = await HandleGetEmployeeById(companyId, id, trackChanges: true);
 
-            if (employeeForCompany == null)
-            {
-                return NotFound();
-            }
+            Employee employeeForCompany = HttpContext.Items["employee"] as Employee;
 
             EmployeeForUpdateDto employeeToPatch = _mapper.Map<EmployeeForUpdateDto>(employeeForCompany);
 
             patchDoc.ApplyTo(employeeToPatch, ModelState);
+
             TryValidateModel(employeeToPatch);
+
             if (!ModelState.IsValid)
             {
                 _logger.LogError("Invalid model state for the patch document");

@@ -1,3 +1,4 @@
+using CompanyEmployeesOriginal.ActionFilters;
 using Contracts;
 using Entities;
 using Microsoft.AspNetCore.Builder;
@@ -38,5 +39,12 @@ public static class ServiceExtensions {
     // register the repository manager
     public static void ConfigureRepositoryManager(this IServiceCollection services) =>
         services.AddScoped<IRepositoryManager, RepositoryManager>();
+
+    public static void ConfigureCustomActionFilters(this IServiceCollection services)
+    {
+        services.AddScoped<ValidationFilterAttribute>();
+        services.AddScoped<ValidateCompanyExistsAttribute>();
+        services.AddScoped<ValidateEmployeeForCompanyExistsAttribute>();
+    }
 
 }
