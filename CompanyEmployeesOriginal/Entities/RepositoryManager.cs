@@ -35,6 +35,6 @@ namespace Entities
                 return _employeeRepository;
             }
         }
-        public void Save() => _repoCtx.SaveChanges();
+        public async Task SaveAsync() => await _repoCtx.SaveChangesAsync();
     }
 }

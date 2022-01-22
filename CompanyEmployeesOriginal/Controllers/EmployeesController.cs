@@ -29,25 +29,29 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetEmployeesForCompany(Guid companyId)
+        public async Task<IActionResult> GetEmployeesForCompany(Guid companyId)
         {
-            if (HandleGetCompanyById(companyId, out Company company) == null)
+            Company company = await HandleGetCompanyById(companyId);
+            if (company == null)
             {
                 return NotFound();
             }
-            var empFromDb = _repo.Employee.GetEmployees(companyId, trackChanges: false);
+            var empFromDb = await _repo.Employee.GetEmployeesAsync(companyId, trackChanges: false);
             var empDto = _mapper.Map<IEnumerable<EmployeeDto>>(empFromDb);
             return Ok(empDto);
         }
 
         [HttpGet("{id}", Name = "GetEmployeeForCompany")]
-        public IActionResult GetEmployee(Guid companyId, Guid id)
+        public async Task<IActionResult> GetEmployee(Guid companyId, Guid id)
         {
-            if (HandleGetCompanyById(companyId, out Company company) == null)
+            Company company = await HandleGetCompanyById(companyId);
+
+            if (company == null)
             {
                 return NotFound();
             }
-            if (HandleGetEmployeeById(companyId, id, out Employee employeeForCompany, trackChanges: true) == null)
+            Employee employeeForCompany = await HandleGetEmployeeById(companyId, id, trackChanges: true);
+            if (employeeForCompany == null)
             {
                 return NotFound();
             }
@@ -56,7 +60,7 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpPost]
-        public IActionResult CreateEmployeeForCompany(Guid companyId, [FromBody] EmployeeForCreationDto employeeDto)
+        public async Task<IActionResult> CreateEmployeeForCompany(Guid companyId, [FromBody] EmployeeForCreationDto employeeDto)
         {
             if (employeeDto == null)
             {
@@ -64,14 +68,21 @@ namespace CompanyEmployeesOriginal.Controllers
                 _logger.LogError(strToLog);
                 return BadRequest(strToLog);
             }
-            if (HandleGetCompanyById(companyId, out Company company) == null)
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Invalid model state for the EmployeeForCreationDto object");
+                return UnprocessableEntity(ModelState);
+            }
+            Company company = await HandleGetCompanyById(companyId);
+
+            if (company == null)
             {
                 return NotFound();
             }
             var employeeEntity = _mapper.Map<Employee>(employeeDto);
 
             _repo.Employee.CreateEmployeeForCompany(companyId, employeeEntity);
-            _repo.Save();
+            await _repo.SaveAsync();
             var employeeToReturn = _mapper.Map<EmployeeDto>(employeeEntity);
             return CreatedAtRoute("GetEmployeeForCompany", new
             {
@@ -82,25 +93,27 @@ namespace CompanyEmployeesOriginal.Controllers
         }
 
         [HttpDelete]
-        public IActionResult DeleteEmployee(Guid companyId, Guid employeeId)
+        public async Task<IActionResult> DeleteEmployee(Guid companyId, Guid employeeId)
         {
-            if (HandleGetCompanyById(companyId, out Company company) == null)
+            Company company = await HandleGetCompanyById(companyId);
+
+            if (company == null)
             {
                 return NotFound();
             }
-
-            if (HandleGetEmployeeById(companyId, employeeId, out Employee employeeForCompany, trackChanges: true) == null)
+            Employee employeeForCompany = await HandleGetEmployeeById(companyId, employeeId, trackChanges: true);
+            if (employeeForCompany == null)
             {
                 return NotFound();
             }
 
             _repo.Employee.DeleteEmployee(employeeForCompany);
-            _repo.Save();
+            await _repo.SaveAsync();
             return NoContent();
         }
 
         [HttpPut("{employeeId}")]
-        public IActionResult UpdateEmployeeForCompany(Guid companyId, Guid employeeId, [FromBody] EmployeeForUpdateDto employeeDto)
+        public async Task<IActionResult> UpdateEmployeeForCompany(Guid companyId, Guid employeeId, [FromBody] EmployeeForUpdateDto employeeDto)
         {
             if (employeeDto == null)
             {
@@ -108,59 +121,75 @@ namespace CompanyEmployeesOriginal.Controllers
                 _logger.LogError(strToLog);
                 return BadRequest(strToLog);
             }
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Invalid model state for the EmployeeForUpdateDto object");
+                return UnprocessableEntity(ModelState);
+            }
+            Company company = await HandleGetCompanyById(companyId);
 
-            if (HandleGetCompanyById(companyId, out Company company) == null)
+            if (company == null)
             {
                 return NotFound();
             }
-            if (HandleGetEmployeeById(companyId, employeeId, out Employee employeeForCompany, trackChanges: true) == null)
+            Employee employeeForCompany = await HandleGetEmployeeById(companyId, employeeId, trackChanges: true);
+
+            if (employeeForCompany == null)
             {
                 return NotFound();
             }
 
             _mapper.Map(employeeDto, employeeForCompany);
-            _repo.Save();
+            await _repo.SaveAsync();
 
             return NoContent();
         }
 
         [HttpPatch("{id}")]
-        public IActionResult PartiallyUpdateEmployeeForCompany(
+        public async Task<IActionResult> PartiallyUpdateEmployeeForCompany(
             Guid companyId, 
             Guid id, 
             [FromBody] JsonPatchDocument<EmployeeForUpdateDto> patchDoc
         )
         {
+
             if (HandleDtoFromBody(patchDoc) == null)
             {
                 return BadRequest();
             }
-
-            if (HandleGetCompanyById(companyId, out Company company) == null)
+            Company company = await HandleGetCompanyById(companyId);
+            if (company == null)
             {
                 return NotFound();
             }
+            Employee employeeForCompany = await HandleGetEmployeeById(companyId, id, trackChanges: true);
 
-            if (HandleGetEmployeeById(companyId: companyId, employeeId: id, out Employee employeeForCompany, trackChanges: true) == null)
+            if (employeeForCompany == null)
             {
                 return NotFound();
             }
 
             EmployeeForUpdateDto employeeToPatch = _mapper.Map<EmployeeForUpdateDto>(employeeForCompany);
 
-            patchDoc.ApplyTo(employeeToPatch);
+            patchDoc.ApplyTo(employeeToPatch, ModelState);
+            TryValidateModel(employeeToPatch);
+            if (!ModelState.IsValid)
+            {
+                _logger.LogError("Invalid model state for the patch document");
+                return UnprocessableEntity(ModelState);
+            }
 
             _mapper.Map(employeeToPatch, employeeForCompany);
 
-            _repo.Save();
+            await _repo.SaveAsync();
 
             return NoContent();
         }
 
         [NonAction]
-        public Company HandleGetCompanyById(Guid companyId, out Company company, bool trackChanges = false)
+        public async Task<Company> HandleGetCompanyById(Guid companyId, bool trackChanges = false)
         {
-            company = _repo.Company.GetCompany(companyId, trackChanges);
+            Company company = await _repo.Company.GetCompanyAsync(companyId, trackChanges);
             if (company == null)
             {
                 string strToLog = string.Format(LoggerCustomMessages.IdNotFoundInDB, nameof(Company), companyId);
@@ -169,9 +198,9 @@ namespace CompanyEmployeesOriginal.Controllers
             return company;
         }
         [NonAction]
-        public Employee HandleGetEmployeeById(Guid companyId, Guid employeeId, out Employee employeeForCompany, bool trackChanges = false)
+        public async Task<Employee> HandleGetEmployeeById(Guid companyId, Guid employeeId, bool trackChanges = false)
         {
-            employeeForCompany = _repo.Employee.GetEmployee(companyId, employeeId, trackChanges);
+            Employee employeeForCompany = await _repo.Employee.GetEmployeeAsync(companyId, employeeId, trackChanges);
             if (employeeForCompany == null)
             {
                 string strToLog = string.Format(LoggerCustomMessages.IdNotFoundInDB, nameof(Employee), employeeId);

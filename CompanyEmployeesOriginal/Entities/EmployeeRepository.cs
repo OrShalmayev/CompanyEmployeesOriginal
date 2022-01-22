@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace Entities
 {
@@ -13,15 +14,16 @@ namespace Entities
         {
         }
 
-        public IEnumerable<Employee> GetEmployees(Guid id, bool trackChanges)
+        public async Task<IEnumerable<Employee>> GetEmployeesAsync(Guid id, bool trackChanges)
         {
-            return FindByCondition(e => e.CompanyId.Equals(id), trackChanges)
-                .OrderBy(e => e.Name);
+            return await FindByCondition(e => e.CompanyId.Equals(id), trackChanges)
+                .OrderBy(e => e.Name)
+                .ToListAsync();
         }
 
-        public Employee GetEmployee(Guid companyId, Guid empId, bool trackChanges)
+        public async Task<Employee> GetEmployeeAsync(Guid companyId, Guid empId, bool trackChanges)
         {
-            return FindByCondition(e => e.CompanyId.Equals(companyId) && e.Id.Equals(empId), trackChanges).SingleOrDefault();
+            return await FindByCondition(e => e.CompanyId.Equals(companyId) && e.Id.Equals(empId), trackChanges).SingleOrDefaultAsync();
         }
         public void CreateEmployeeForCompany(Guid companyId, Employee employee)
         {
